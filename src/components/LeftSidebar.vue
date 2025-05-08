@@ -1,13 +1,14 @@
 <template>
-    <a-layout style="height: 100vh">
+    <a-layout id="Left-Side-Bar">
         <!-- 左侧栏 -->
-        <a-layout-sider width="260" class="left-layout-sider">
+        <a-layout-sider :width="260" class="left-layout-sider">
             <!-- 模型设置按钮 -->
             <model_settings v-model:propName="value" />
             <!-- 顶部功能按钮 -->
-            <a-space direction="vertical" style="width: 50%;">
-                <a-button id="New-Chat-Button" type="primary" block @click="addNewChat">新建对话</a-button>
-            </a-space>
+            <div style="display: flex; justify-content: center;">
+                <a-button class="New-Chat-Button" type="primary" block @click="addNewChat">新建对话</a-button>
+            </div>
+
 
             <!-- 历史对话，滚动区域 -->
             <div id="dialogue-history">
@@ -83,12 +84,14 @@ export default {
 
 <style scoped>
 .dialogue-btn {
+    margin-top: 4px;
+    margin-top: 4px;
     padding: 2px;
     width: 220px;
-    height: 28px;
-    background-color: rgb(250, 255, 255);
+    height: 36px;
+    background-color: rgb(249, 251, 255);
     border: 1px solid transparent;
-    border-radius: 8px;
+    border-radius: 12px;
     font-family: 'MapleMono';
     font-size: 14px;
     text-align: left;
@@ -111,18 +114,28 @@ export default {
 }
 
 
-#New-Chat-Button {
-    font-family: 'MapleMono';
-    font-size: 18px;
-    width: 80;
+.New-Chat-Button {
+    width: 90%;
     height: 40;
     margin: 5px;
     padding: 2px;
+    font-family: 'MapleMono';
+    font-size: 18px;
+    border-radius: 10px;
+    background-color: rgb(219, 233, 254);
+    color: rgb(77, 107, 254);
 }
 
 .left-layout-sider {
-    background: rgb(250, 255, 255);
+    width: 260px;
+    height: 100%;
+    background: rgb(249, 251, 255);
     padding: 16px 8px;
     border: 1px solid azure;
+}
+
+#Left-Side-Bar {
+    width: 260px;
+    height: 100%;
 }
 </style>

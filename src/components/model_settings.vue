@@ -112,6 +112,8 @@ watch(panelVisible, async (visible) => {
 
 .model_settings {
     position: relative;
+    width: 100%;
+    height: 60px;
 }
 
 .settings-button {
@@ -119,7 +121,6 @@ watch(panelVisible, async (visible) => {
     height: 40px;
     padding: 2px;
     margin: 16px 8px;
-    border: 1px solid rgb(95, 175, 246);
     background-color: transparent;
     cursor: pointer;
 }
