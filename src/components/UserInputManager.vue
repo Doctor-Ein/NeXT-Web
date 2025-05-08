@@ -1,19 +1,31 @@
 <template>
     <div class="UserInputArea">
+        <!-- 文件列表展示区域 -->
+        <div class="FileListContainer" v-if="fileList.length > 0">
+            <div class="FileItem" v-for="(file, index) in fileList" :key="file.uid">
+                <div class="FileInfo">
+                    <span class="FileName">{{ file.name }}</span>
+                    <span class="FileSize">{{ formatFileSize(file.size) }}</span>
+                </div>
+                <a-button type="text" danger @click="removeFile(index)" class="RemoveButton">
+                    <DeleteOutlined />
+                </a-button>
+            </div>
+        </div>
+
         <div class="InputContainer">
+            <!-- 用户输入区域 -->
             <a-textarea class="Unique_Input" v-model:value="user_input" placeholder="在此输入内容..." :rows="10"
                 :auto-size="false" @keydown.enter.exact.prevent="handleSubmit" />
             <!-- 操作按钮区域 -->
             <div class="ActionButtons">
                 <!-- 上传按钮 -->
-                <a-upload ref="uploadRef" v-model:file-list="fileList" :show-upload-list="false"
-                    :before-upload="beforeUpload" multiple>
-                    <!-- 隐藏默认的上传按钮 -->
-                    <template #default>
-                        <a-button class="UploadButton" @click="triggerUpload">
-                            <FileAddTwoTone style="font-size: 28px;" />
-                        </a-button>
-                    </template>
+                <a-upload v-model:file-list="fileList" :before-upload="beforeUpload" :multiple="true"
+                    :show-upload-list="false" @change="handleUploadChange" accept=".png,.jpg,.jpeg"
+                    style="display: inline-block">
+                    <a-button class="UploadButton" type="default">
+                        <FileAddTwoTone style="font-size: 28px;" />
+                    </a-button>
                 </a-upload>
 
                 <a-button type="primary" class="SubmitButton" @click="handleSubmit" :disabled="isSubmitting">
@@ -26,81 +38,198 @@
 
 <script setup>
 import { ref } from 'vue';
-import { FileAddTwoTone } from '@ant-design/icons-vue';
+import { FileAddTwoTone, DeleteOutlined } from '@ant-design/icons-vue';
 import { message } from 'ant-design-vue';
 
 const user_input = ref('');
 const isSubmitting = ref(false);
 const fileList = ref([]);
-const uploadRef = ref(null);
 
-// 阻止自动上传
-const beforeUpload = () => {
-    return false;
-};
-
-// 触发文件选择对话框
-const triggerUpload = () => {
-    const uploadComponent = uploadRef.value;
-    if (uploadComponent) {
-        const input = uploadComponent.$el.querySelector('input[type="file"]');
-        if (input) {
-            input.click();
-        } else {
-            console.error('未找到文件输入元素');
-        }
-    } else {
-        console.error('上传组件未初始化');
+// 虽然常用的一个检查文件的钩子函数但还是只用来处理后缀名hhh
+const beforeUpload = (file) => {
+    const isJpg = file.name.toLowerCase().endsWith('.jpg');
+    if (isJpg) {
+        const newFile = new File([file], file.name.replace(/\.jpg$/i, '.jpeg'), {
+            type: 'image/jpeg',
+            lastModified: file.lastModified,
+        });
+        console.log(newFile)
+        return newFile;
     }
+    console.log(file)
+    return file;
 };
+
+// 处理上传变化
+const handleUploadChange = (info) => {
+    if (info.file.status === 'removed') {
+        return;
+    }
+
+    // 更新文件列表
+    fileList.value = info.fileList.map(file => {
+        return {
+            ...file,
+            uid: file.uid,
+            name: file.name,
+            size: file.size,
+            originFileObj: file.originFileObj || file
+        };
+    });
+};
+
+// 移除文件
+const removeFile = (index) => {
+    fileList.value.splice(index, 1);
+};
+
+// 格式化文件大小
+const formatFileSize = (bytes) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+};
+
+const getFileListJsonWithContent = async () => {
+    const filesWithContent = await Promise.all(
+        fileList.value.map(async (file) => {
+            let base64Content = null;
+
+            if (file.originFileObj) {
+                base64Content = await readFileAsBase64(file.originFileObj);
+            }
+
+            return {
+                uid: file.uid,
+                name: file.name,
+                size: file.size,
+                type: file.type,
+                content: base64Content // 添加Base64编码内容
+            };
+        })
+    );
+
+    return filesWithContent
+};
+
+// 将 File 对象转为带前缀的 Base64 编码
+const readFileAsBase64 = (file) => {
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result); // 保留 data URL 前缀
+    });
+};
+
+
 
 // 提交处理
 const handleSubmit = async () => {
     if (isSubmitting.value) return;
     isSubmitting.value = true;
 
+    const payload = { 'type': 'images', 'content': getFileListJsonWithContent() }
     try {
-        // 创建 FormData 对象
-        const formData = new FormData();
-        formData.append('text', user_input.value);
-        fileList.value.forEach((file) => {
-            formData.append('files[]', file.originFileObj);
+        if (!user_input.value && fileList.value.length === 0) {
+            message.warning('请输入内容或上传文件');
+            return;
+        }
+
+        const response = await fetch('http://127.0.0.1:5000/api/submit', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
         });
 
-        // 模拟异步提交操作，例如发送请求到后端
-        console.log('提交内容：', user_input.value);
-        console.log('上传文件：', fileList.value);
-        await new Promise((resolve) => setTimeout(resolve, 1000)); // 模拟延迟
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
 
-        // 提交成功后的处理逻辑
         message.success('提交成功');
         user_input.value = '';
         fileList.value = [];
     } catch (error) {
         console.error('提交失败：', error);
-        message.error('提交失败');
+        message.error('提交失败: ' + error.message);
     } finally {
         isSubmitting.value = false;
     }
 };
 </script>
 
-
 <style scoped>
-/* tile uploaded pictures */
-.upload-list-inline :deep(.ant-upload-list-item) {
-    float: left;
+.FileListContainer {
+    height: 20px;
+    margin-bottom: 2px;
+    position: absolute;
+    left: 10px;
+    top: 0px;
 }
 
-.upload-list-inline [class*='-upload-list-rtl'] :deep(.ant-upload-list-item) {
-    float: right;
+.FileItem {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 4px;
+    margin-bottom: 10px;
+    background-color: #f9f9f9;
+    border: 1px solid #bfbfbf;
+    border-radius: 8px;
+    width: 100%;
+    max-width: 160px;
+    /* 固定最大宽度 */
+}
+
+.FileInfo {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    /* 重要：允许内容溢出 */
+    flex: 1;
+    /* 占据剩余空间 */
+}
+
+.FileName {
+    font-size: 14px;
+    margin-bottom: 2px;
+    white-space: nowrap;
+    /* 不换行 */
+    overflow: hidden;
+    /* 隐藏溢出内容 */
+    text-overflow: ellipsis;
+    /* 显示省略号 */
+    max-width: 100%;
+    /* 限制最大宽度 */
+}
+
+.FileSize {
+    font-size: 12px;
+    color: #888;
+}
+
+.RemoveButton {
+    width: 20px;
+    height: 20px;
+    color: #ff4d4f;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 16px;
+
+    flex-shrink: 0;
+    /* 防止按钮被压缩 */
 }
 
 .ActionButtons {
     position: absolute;
     bottom: 12px;
     right: 16px;
-    z-index: 1;
 
     display: flex;
     flex-direction: row;
@@ -112,6 +241,8 @@ const handleSubmit = async () => {
     height: 40px;
     border-radius: 10px;
     margin-right: 8px;
+    position: relative;
+    z-index: 1;
 
     display: flex;
     justify-content: center;
@@ -142,7 +273,7 @@ const handleSubmit = async () => {
     justify-content: center;
     align-items: flex-end;
     width: 720px;
-    height: 160px;
+    height: 180px;
     bottom: 5%;
     left: 50%;
     transform: translateX(-50%);
@@ -151,7 +282,7 @@ const handleSubmit = async () => {
 .InputContainer {
     position: relative;
     width: 100%;
-    height: 100%;
+    height: 75%;
     background-color: transparent;
 }
 
