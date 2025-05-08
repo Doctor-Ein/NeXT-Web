@@ -1,0 +1,23 @@
+@font-face {
+    font-family: 'MapleMono';
+    /* 自定义字体名称 */
+    src: url('./MapleMonoNL-NF-CN-Regular.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'MapleMono';
+    /* 自定义字体名称 */
+    src: url('./MapleMonoNL-NF-CN-Bold.ttf') format('truetype');
+    font-weight: bold;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'MapleMono';
+    /* 自定义字体名称 */
+    src: url('./MapleMonoNL-NF-CN-Italic.ttf') format('truetype');
+    font-weight: normal;
+    font-style: italic;
+}

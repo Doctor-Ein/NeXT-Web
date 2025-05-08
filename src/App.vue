@@ -1,26 +1,27 @@
 <template>
-  <img alt="Vue logo" src="./assets/logo.png">
-  <HelloWorld msg="Welcome to Your Vue.js App"/>
+  <a-layout style="height: 100vh">
+    <!-- 左侧栏 -->
+    <LeftSidebar v-model:propName="value" />
+
+
+    <!-- 主内容区域 -->
+    <a-layout-content style="padding: 24px;">
+      <h1>右侧主内容</h1>
+    </a-layout-content>
+  </a-layout>
 </template>
 
 <script>
-import HelloWorld from './components/HelloWorld.vue'
+import LeftSidebar from './components/LeftSidebar.vue';
 
 export default {
-  name: 'App',
   components: {
-    HelloWorld
+    LeftSidebar
+  },
+  data() {
+    return {
+      collapsed: false
+    };
   }
-}
+};
 </script>
-
-<style>
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
-}
-</style>
