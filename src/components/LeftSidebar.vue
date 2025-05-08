@@ -1,30 +1,28 @@
 <template>
-    <a-layout id="Left-Side-Bar">
-        <!-- 左侧栏 -->
-        <a-layout-sider :width="260" class="left-layout-sider">
-            <!-- 模型设置按钮 -->
-            <model_settings v-model:propName="value" />
-            <!-- 顶部功能按钮 -->
-            <div style="display: flex; justify-content: center;">
-                <a-button class="New-Chat-Button" type="primary" block @click="addNewChat">新建对话</a-button>
-            </div>
+    <!-- 左侧栏 -->
+    <a-layout-sider :width="260" class="left-layout-sider">
+        <!-- 模型设置按钮 -->
+        <model_settings v-model:propName="value" />
+        <!-- 顶部功能按钮 -->
+        <div style="display: flex; justify-content: center;">
+            <a-button class="New-Chat-Button" type="primary" block @click="addNewChat">新建对话</a-button>
+        </div>
 
 
-            <!-- 历史对话，滚动区域 -->
-            <div id="dialogue-history">
-                <a-space direction="vertical">
-                    <a-button class="dialogue-btn" v-for="chat in chatList" :key="chat.id" type="default" block
-                        @click="selectChat(chat.id)">
-                        {{ chat.title }}
-                    </a-button>
-                </a-space>
-            </div>
-        </a-layout-sider>
-    </a-layout>
+        <!-- 历史对话，滚动区域 -->
+        <div class="dialogue-history">
+            <a-space direction="vertical">
+                <a-button class="dialogue-btn" v-for="chat in chatList" :key="chat.id" type="default" block
+                    @click="selectChat(chat.id)">
+                    {{ chat.title }}
+                </a-button>
+            </a-space>
+        </div>
+    </a-layout-sider>
 </template>
 
 <script>
-import { ref } from 'vue';
+import { ref, emit, onMounted } from 'vue';
 import model_settings from '@/components/model_settings.vue';
 
 export default {
@@ -34,41 +32,62 @@ export default {
     setup() {
         // 初始化对话列表
         const chatList = ref([]);
+        const currentChatId = ref(null);
 
-        // 添加新对话
-        const addNewChat = async () => {
-            const payload = { title: `对话 ${chatList.value.length + 1}` };
+        // 页面挂载时拉取历史对话
+        onMounted(async () => {
             try {
-                // 发送 POST 请求到后端
+                const res = await fetch('http://127.0.0.1:5000/api/dialogue_list');
+                if (!res.ok) throw new Error(res.statusText);
+                const data = await res.json();
+                chatList.value = data['dialogues'];
+                console.log('Debug', chatList)
+            } catch (e) {
+                console.error('加载历史对话失败', e);
+            }
+        });
+
+        // 添加新会话
+        const addNewChat = async () => {
+            // 如果列表最顶已经是“新对话”，直接选中它
+            if (chatList.value.length > 0 && chatList.value[0].title === '新对话') {
+                selectChat(chatList.value[0].id);
+                return;
+            }
+
+            const payload = { title: '新对话' };
+            let newChat = null;
+            try {
                 const response = await fetch('http://127.0.0.1:5000/api/create_dialogue', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload),
                 });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 const result = await response.json();
-                console.log('设置已成功发送到后端:', result);
-
-                // 将返回的 id 添加到 chatList 中
-                chatList.value.unshift({
-                    id: result.id,
-                    title: `对话 ${chatList.value.length + 1}`,
-                });
+                newChat = { id: result.id, title: payload.title };
+                console.log('Debug', newChat.id)
             } catch (error) {
-                console.error('发送设置到后端时出错:', error);
+                console.error('创建新对话失败：', error);
+                return;
             }
+
+            // 把新会话放到最前并选中
+            chatList.value.unshift(newChat);
+            selectChat(newChat.id);
         };
+
 
 
         // 选择对话
         const selectChat = (id) => {
-            console.log('选中对话 ID:', id);
+            currentChatId.value = id;
+            // 根据 id 筛选出对应的 chat 对象
+            const selectedChat = chatList.value.find(chat => chat.id === id);
+            console.log('选中会话 ID:', id, '选中会话对象:', selectedChat);
+
+            // 通知父组件或全局状态
+            emit('update:currentChat', id);
         };
 
         // 返回需要暴露给模板的属性和方法
@@ -97,7 +116,7 @@ export default {
     text-align: left;
 }
 
-#dialogue-history {
+.dialogue-history {
     width: 240px;
     height: 800px;
     /* 设置固定高度 */
@@ -127,15 +146,9 @@ export default {
 }
 
 .left-layout-sider {
-    width: 260px;
     height: 100%;
     background: rgb(249, 251, 255);
     padding: 16px 8px;
     border: 1px solid azure;
-}
-
-#Left-Side-Bar {
-    width: 260px;
-    height: 100%;
 }
 </style>

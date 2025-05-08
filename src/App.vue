@@ -1,14 +1,13 @@
 <template>
   <a-layout style="height: 100%;display: flex;flex-direction: row;">
     <!-- 左侧栏 -->
-    <div style="width: 260px;">
-      <LeftSidebar v-model:propName="value" />
-    </div>
+    <LeftSidebar />
 
 
 
     <!-- 主内容区域 -->
     <a-layout-content class="Right-Layout">
+      <MainChat :messages="mes" />
       <UserInputManager />
     </a-layout-content>
   </a-layout>
@@ -17,15 +16,20 @@
 <script>
 import LeftSidebar from './components/LeftSidebar.vue';
 import UserInputManager from './components/UserInputManager.vue';
+import MainChat from './components/MainChat.vue';
+
+
 
 export default {
   components: {
     LeftSidebar,
     UserInputManager,
+    MainChat,
   },
   data() {
     return {
-      collapsed: false
+      collapsed: false,
+      mes: [{ 'id': 1, 'role': 'assistant', 'content': '### 你好呀' }, { 'id': 2, 'role': 'user', 'content': '我一点都不好😭' },],
     };
   }
 };

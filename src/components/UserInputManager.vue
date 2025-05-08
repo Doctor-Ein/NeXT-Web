@@ -123,20 +123,18 @@ const readFileAsBase64 = (file) => {
     });
 };
 
-
-
 // 提交处理
 const handleSubmit = async () => {
     if (isSubmitting.value) return;
     isSubmitting.value = true;
 
-    const payload = { 'type': 'images', 'content': getFileListJsonWithContent() }
     try {
         if (!user_input.value && fileList.value.length === 0) {
             message.warning('请输入内容或上传文件');
             return;
         }
-
+        const images = await getFileListJsonWithContent()
+        const payload = { 'text': user_input.value, 'images': images }
         const response = await fetch('http://127.0.0.1:5000/api/submit', {
             method: 'POST',
             headers: {
@@ -148,7 +146,8 @@ const handleSubmit = async () => {
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
-
+        const result = await response.json()
+        console.log('Invoke_Model:', result.res)
         message.success('提交成功');
         user_input.value = '';
         fileList.value = [];
@@ -272,8 +271,8 @@ const handleSubmit = async () => {
     display: flex;
     justify-content: center;
     align-items: flex-end;
-    width: 720px;
-    height: 180px;
+    width: 60%;
+    height: 20%;
     bottom: 5%;
     left: 50%;
     transform: translateX(-50%);
