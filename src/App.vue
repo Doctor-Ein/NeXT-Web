@@ -6,7 +6,6 @@
 
     <!-- 主内容区域 -->
     <a-layout-content style="padding: 24px;">
-      <h1>右侧主内容</h1>
     </a-layout-content>
   </a-layout>
 </template>
@@ -16,7 +15,7 @@ import LeftSidebar from './components/LeftSidebar.vue';
 
 export default {
   components: {
-    LeftSidebar
+    LeftSidebar,
   },
   data() {
     return {

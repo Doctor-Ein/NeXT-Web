@@ -1,14 +1,14 @@
 <template>
     <div class="model_settings">
         <!-- 设置按钮 -->
-        <button class="settings-button" @click.stop="togglePanel">
+        <a-button class="settings-button" @click.stop="togglePanel">
             <img src="@/assets/images/settings-icon.png" class="settings-icon" alt="设置" />
-        </button>
+        </a-button>
 
         <!-- 展开的设置面板 -->
         <div v-if="panelVisible" ref="panelRef" class="settings-panel">
-            <h2 style="font-family: \'MapleMono\';font-size: 18px;"> 配置项区域</h2>
-            <hr>
+            <h2 style="font-family: 'MapleMono'; font-size: 18px;">配置项区域</h2>
+            <hr />
             <p class="pe">temperature</p>
             <a-input-number v-model:value="temperature" :min="0" :max="1" />
             <p class="pe">top_k</p>
@@ -17,7 +17,7 @@
             <a-input-number v-model:value="top_p" :min="0.5" :max="1.0" />
             <p class="pe">max_tokens</p>
             <a-input-number v-model:value="max_tokens" :min="32" :max="2048" />
-            <hr>
+            <hr />
             <p class="pe">prompt</p>
             <a-textarea v-model:value="prompt"
                 placeholder="Here, personalize the personality and background of your assistant" :rows="4" />
@@ -26,49 +26,49 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
+import { ref, watch, onMounted, onBeforeUnmount } from 'vue';
 
 // 定义响应式变量
-const temperature = ref(0.3)
-const top_k = ref(250)
-const top_p = ref(0.9)
-const max_tokens = ref(512)
-const prompt = ref('')
+const temperature = ref(0.3);
+const top_k = ref(250);
+const top_p = ref(0.9);
+const max_tokens = ref(512);
+const prompt = ref('');
 
 // 控制面板显示的变量
-const panelVisible = ref(false)
-const panelRef = ref(null)
+const panelVisible = ref(false);
+const panelRef = ref(null);
 
 // 切换面板显示状态的函数
 function togglePanel() {
-    panelVisible.value = !panelVisible.value
+    panelVisible.value = !panelVisible.value;
 }
 
 // 监听点击事件，点击面板外部时关闭面板
 function handleClickOutside(event) {
     if (panelRef.value && !panelRef.value.contains(event.target)) {
-        panelVisible.value = false
+        panelVisible.value = false;
     }
 }
 
 // 组件挂载时添加事件监听器
 onMounted(() => {
-    document.addEventListener('click', handleClickOutside)
-})
+    document.addEventListener('click', handleClickOutside);
+});
 
 // 组件卸载前移除事件监听器
 onBeforeUnmount(() => {
-    document.removeEventListener('click', handleClickOutside)
-})
+    document.removeEventListener('click', handleClickOutside);
+});
 
 // 监听 panelVisible 的变化
 watch(panelVisible, async (visible) => {
     if (visible) {
         // 面板打开时，禁止页面滚动
-        document.body.style.overflow = 'hidden'
+        document.body.style.overflow = 'hidden';
     } else {
         // 面板关闭时，恢复页面滚动
-        document.body.style.overflow = ''
+        document.body.style.overflow = '';
 
         // 构造要发送的数据
         const payload = {
@@ -77,31 +77,30 @@ watch(panelVisible, async (visible) => {
             top_p: top_p.value,
             max_tokens: max_tokens.value,
             prompt: prompt.value,
-        }
+        };
 
         try {
             // 发送 POST 请求到后端
-            const response = await fetch('/api/settings', {
+            const response = await fetch('http://127.0.0.1:5000/api/settings', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify(payload),
-            })
+            });
 
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`)
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
 
-            const result = await response.json()
-            console.log('设置已成功发送到后端:', result)
+            const result = await response.json();
+            console.log('设置已成功发送到后端:', result);
         } catch (error) {
-            console.error('发送设置到后端时出错:', error)
+            console.error('发送设置到后端时出错:', error);
         }
     }
-})
+});
 </script>
-
 
 <style scoped>
 .pe {
@@ -116,7 +115,7 @@ watch(panelVisible, async (visible) => {
 }
 
 .settings-button {
-    width: 80px;
+    width: 40px;
     height: 40px;
     padding: 2px;
     margin: 16px 8px;
