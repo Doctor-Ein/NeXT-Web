@@ -13,12 +13,22 @@
             </div>
         </div>
 
+        <div class="RAG-Function">
+            <a-button @click="Switch_RAG" :type="isRAGEnabled ? 'primary' : 'default'">
+                <p style="margin: 0;padding: 0;font-family: 'MapleMono';font-size: 15px;font-weight: bold;"
+                    :style="{ backgroundColor: isRAGEnabled ? 'rgb(77, 107, 254)' : 'transparent', color: isRAGEnabled ? 'rgb(219, 233, 254)' : '#000' }">
+                    {{ isRAGEnabled ? 'RAG 开启中' : '开启 RAG' }}
+                </p>
+            </a-button>
+        </div>
+
         <div class="InputContainer">
             <!-- 用户输入区域 -->
             <a-textarea class="Unique_Input" v-model:value="user_input" placeholder="在此输入内容..." :rows="10"
                 :auto-size="false" @keydown.enter.exact.prevent="handleSubmit" />
             <!-- 操作按钮区域 -->
             <div class="ActionButtons">
+                <AudioInputButton />
                 <!-- 上传按钮 -->
                 <a-upload v-model:file-list="fileList" :before-upload="beforeUpload" :multiple="true"
                     :show-upload-list="false" @change="handleUploadChange" :custom-request="dummyRequest"
@@ -41,6 +51,7 @@ import { ref } from 'vue';
 import { FileAddTwoTone, DeleteOutlined } from '@ant-design/icons-vue';
 import { message } from 'ant-design-vue';
 import { defineEmits } from 'vue';
+import AudioInputButton from './AudioInputButton.vue';
 
 // 定义向父组件触发事件
 const emit = defineEmits(['callParent']);
@@ -48,6 +59,8 @@ const emit = defineEmits(['callParent']);
 const user_input = ref('');
 const isSubmitting = ref(false);
 const fileList = ref([]);
+const isRAGEnabled = ref(true); //TODO: 这里先默认开启叭，累了
+
 
 const dummyRequest = ({ onSuccess }) => {
     // 立即标记上传成功，不执行任何操作
@@ -55,6 +68,29 @@ const dummyRequest = ({ onSuccess }) => {
         onSuccess && onSuccess();
     }, 0);
 };
+
+const Switch_RAG = async () => {
+    // isRAGEnabled.value = !isRAGEnabled.value;
+
+    // try {
+    //     const response = await fetch('http://127.0.0.1:5000/api/rag-toggle', {
+    //         method: 'POST',
+    //         headers: {
+    //             'Content-Type': 'application/json',
+    //         },
+    //         body: JSON.stringify({ rag_enabled: isRAGEnabled.value }),
+    //     });
+
+    //     if (!response.ok) throw new Error('状态切换失败');
+
+    //     message.success(isRAGEnabled.value ? 'RAG 模式已开启' : 'RAG 模式已关闭');
+    // } catch (error) {
+    //     message.error('RAG 状态切换失败');
+    //     // 回滚状态
+    //     isRAGEnabled.value = !isRAGEnabled.value;
+    // }
+};
+
 
 // 虽然常用的一个检查文件的钩子函数但还是只用来处理后缀名hhh
 const beforeUpload = (file) => {
@@ -181,6 +217,30 @@ const handleSubmit = async () => {
 </script>
 
 <style scoped>
+.RAG-Text {
+    margin: 0px;
+    padding: 0px;
+
+    font-family: 'MapleMono';
+    font-size: 15px;
+    font-weight: bold;
+    background-color: rgb(219, 233, 254);
+    color: rgb(77, 107, 254);
+}
+
+.RAG-Function {
+    position: absolute;
+    left: 8px;
+    bottom: 12px;
+    z-index: 1;
+
+    width: 60px;
+    height: 40px;
+    border-radius: 10px;
+    padding: 0px;
+    margin: 0px;
+}
+
 .FileListContainer {
     height: 20px;
     margin-bottom: 2px;
