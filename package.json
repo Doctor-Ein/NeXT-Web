@@ -11,10 +11,10 @@
     "@ant-design/icons-vue": "^7.0.1",
     "ant-design-vue": "^4.2.6",
     "core-js": "^3.8.3",
-    "katex": "^0.16.22",
     "markdown-it": "^14.1.0",
     "markdown-it-katex": "^2.0.3",
-    "vue": "^3.2.13"
+    "vue": "^3.2.13",
+    "vue-katex-auto-render": "^0.2.0"
   },
   "devDependencies": {
     "@babel/core": "^7.12.16",

@@ -40,6 +40,10 @@
 import { ref } from 'vue';
 import { FileAddTwoTone, DeleteOutlined } from '@ant-design/icons-vue';
 import { message } from 'ant-design-vue';
+import { defineEmits } from 'vue';
+
+// 定义向父组件触发事件
+const emit = defineEmits(['callParent']);
 
 const user_input = ref('');
 const isSubmitting = ref(false);
@@ -133,8 +137,18 @@ const handleSubmit = async () => {
             message.warning('请输入内容或上传文件');
             return;
         }
-        const images = await getFileListJsonWithContent()
+
+        let images = []
+        if (fileList.value.length != 0) {
+            console.log('Debug:FileList is not empty.')
+            images = await getFileListJsonWithContent()
+        }
         const payload = { 'text': user_input.value, 'images': images }
+
+        message.success('提交成功');
+        user_input.value = '';
+        fileList.value = [];
+
         const response = await fetch('http://127.0.0.1:5000/api/submit', {
             method: 'POST',
             headers: {
@@ -142,15 +156,14 @@ const handleSubmit = async () => {
             },
             body: JSON.stringify(payload),
         });
-
         if (!response.ok) {
+            message.error('网络请求失败');
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         const result = await response.json()
+        // 触发父组件函数调用，并传递 payload
+        emit('callParent', payload);
         console.log('Invoke_Model:', result.res)
-        message.success('提交成功');
-        user_input.value = '';
-        fileList.value = [];
     } catch (error) {
         console.error('提交失败：', error);
         message.error('提交失败: ' + error.message);

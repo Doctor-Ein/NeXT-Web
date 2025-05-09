@@ -19,7 +19,6 @@
 import { computed, defineProps, defineEmits } from 'vue';
 import MarkdownIt from 'markdown-it';
 import markdownItKatex from 'markdown-it-katex';
-import 'katex/dist/katex.min.css';
 
 import userAvatar from '@/assets/images/furina.jpeg';
 import aiAvatar from '@/assets/images/ein.jpeg';
@@ -33,8 +32,43 @@ const props = defineProps({
 const emit = defineEmits(['reset-user', 'reset-ai']);
 
 const avatarUrl = computed(() => (props.role === 'user' ? userAvatar : aiAvatar));
-const md = new MarkdownIt({ html: true });
-const renderedContent = computed(() => md.render(props.content));
+const md = new MarkdownIt().use(markdownItKatex, {
+    // 核心配置：仅生成 MathML
+    output: 'mathml',
+    // 禁用错误抛出（避免渲染失败阻塞流程）
+    throwOnError: false,
+    // 允许信任输入（防止字符转义）
+    trust: true
+});
+
+const renderedContent = computed(() => {
+    const raw = md.render(props.content);
+
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = raw;
+
+    // 更彻底的递归删除函数
+    function removeKatexElements(node) {
+        // 检查当前节点是否是我们要删除的 span
+        if (node.nodeType === Node.ELEMENT_NODE &&
+            node.tagName.toLowerCase() === 'span' &&
+            node.classList.contains('katex-html')) {
+            node.parentNode.removeChild(node);
+            return; // 已经删除，不需要继续处理
+        }
+
+        // 递归处理子节点
+        if (node.childNodes) {
+            // 使用 Array.from 创建静态副本，因为 childNodes 是动态的
+            Array.from(node.childNodes).forEach(child => {
+                removeKatexElements(child);
+            });
+        }
+    }
+
+    removeKatexElements(tempDiv);
+    return tempDiv.innerHTML;
+});
 
 // 复制文本到剪贴板
 async function handleCopy() {
@@ -79,17 +113,63 @@ function handleReset() {
 </script>
 
 <style scoped>
+.content-row {
+    display: inline-flex;
+    /* 使容器根据内容宽度自适应 */
+    align-items: flex-start;
+    /* 子元素顶部对齐，避免拉伸 */
+}
+
+/*这里还是没有优化成功（哭）*/
+.chat-bubble {
+    max-width: 70%;
+    display: inline-block;
+    /* 使气泡根据内容高度自适应 */
+    padding: 8px 8px 0px 8px;
+    /* 根据需要调整内边距 */
+    margin: 0px;
+    /* 去除默认外边距 */
+    font-size: 16px;
+    line-height: 1.5;
+    background-color: var(--bubble-bg, rgb(219, 233, 254));
+    border-radius: 12px;
+    word-break: break-word;
+    /* 支持保留文本中的换行符 */
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.chat-bubble p {
+    margin: 0px;
+    /* 去除段落默认外边距 */
+    padding: 0px;
+    /* 去除段落默认内边距 */
+}
+
+/* 公式容器基础样式 */
+.katex {
+    font: normal 1em KaTeX_Main, Times New Roman, serif;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+/* 块级公式对齐 */
+.katex-display {
+    display: flex;
+    justify-content: center;
+    margin: 1em 0;
+}
+
+/* 符号间距修正 */
+.katex .mspace {
+    display: inline-block;
+}
+
 .chat-item {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 4px;
     margin-bottom: 30px;
-}
-
-.content-row {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
 }
 
 .chat-item.user .content-row {
@@ -100,15 +180,6 @@ function handleReset() {
     flex-shrink: 0;
 }
 
-.chat-bubble {
-    max-width: 70%;
-    padding: 8px 8px 0px 8px;
-    border-radius: 12px;
-    font-size: 16px;
-    line-height: 1.5;
-    word-wrap: break-word;
-}
-
 .chat-item.user .chat-bubble {
     background-color: rgb(219, 233, 254);
     max-width: 50%;
@@ -117,6 +188,7 @@ function handleReset() {
 .chat-item.ai .chat-bubble {
     background-color: transparent;
 }
+
 
 .button-group {
     display: flex;
