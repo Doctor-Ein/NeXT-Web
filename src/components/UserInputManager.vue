@@ -21,8 +21,8 @@
             <div class="ActionButtons">
                 <!-- 上传按钮 -->
                 <a-upload v-model:file-list="fileList" :before-upload="beforeUpload" :multiple="true"
-                    :show-upload-list="false" @change="handleUploadChange" accept=".png,.jpg,.jpeg"
-                    style="display: inline-block">
+                    :show-upload-list="false" @change="handleUploadChange" :custom-request="dummyRequest"
+                    accept=".png,.jpg,.jpeg" style="display: inline-block">
                     <a-button class="UploadButton" type="default">
                         <FileAddTwoTone style="font-size: 28px;" />
                     </a-button>
@@ -48,6 +48,13 @@ const emit = defineEmits(['callParent']);
 const user_input = ref('');
 const isSubmitting = ref(false);
 const fileList = ref([]);
+
+const dummyRequest = ({ onSuccess }) => {
+    // 立即标记上传成功，不执行任何操作
+    setTimeout(() => {
+        onSuccess && onSuccess();
+    }, 0);
+};
 
 // 虽然常用的一个检查文件的钩子函数但还是只用来处理后缀名hhh
 const beforeUpload = (file) => {
@@ -109,8 +116,8 @@ const getFileListJsonWithContent = async () => {
                 uid: file.uid,
                 name: file.name,
                 size: file.size,
-                type: file.type,
-                content: base64Content // 添加Base64编码内容
+                media_type: file.type,
+                data: base64Content // 添加Base64编码内容
             };
         })
     );
