@@ -1,52 +1,62 @@
 <template>
-    <div>
-        <button @click="toggleRecording">
-            {{ isRecording ? '结束录音' : '开始录音' }}
-        </button>
+    <div class="transcribe-button">
+        <a-button :type="isRecording ? 'primary' : 'default'" :loading="loading" @click="toggleTranscribe">
+            {{ isRecording ? '停止录音' : '开始录音' }}
+        </a-button>
     </div>
 </template>
 
-
 <script setup>
-import { ref, defineEmits } from 'vue';
-import axios from 'axios';
+import { ref, defineEmits } from 'vue'
+import { message } from 'ant-design-vue'
 
-const isRecording = ref(false);
-const emit = defineEmits(['transcriptReady']);
+const emit = defineEmits(['update:transcript'])
 
-const toggleRecording = async () => {
-    if (isRecording.value) {
-        await stopRecording();
-    } else {
-        await startRecording();
-    }
-};
+const isRecording = ref(false)
+const loading = ref(false)
 
-const startRecording = async () => {
+async function toggleTranscribe() {
+    loading.value = true
+
     try {
-        await axios.post('http://127.0.0.1:5000/start_recording');
-        isRecording.value = true;
-    } catch (error) {
-        console.error('录音失败:', error);
-    }
-};
+        if (!isRecording.value) {
+            // 启动录音
+            const resp = await fetch('http://127.0.0.1:5000/api/transcribe', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+            })
+            if (!resp.ok) throw new Error(`启动失败：${resp.status}`)
+            message.success('转录启动', 1)
+            isRecording.value = true
+            emit('update:transcript', '')  // 清空原始文本
 
-const stopRecording = async () => {
-    try {
-        await axios.post('http://127.0.0.1:5000/stop_recording');
-        isRecording.value = false;
-        await fetchTranscript();
-    } catch (error) {
-        console.error('停止录音失败:', error);
-    }
-};
+        } else {
+            // 停止录音并获取文本
+            const resp = await fetch('http://127.0.0.1:5000/api/transcribe')
+            if (!resp.ok) throw new Error(`停止失败：${resp.status}`)
+            const data = await resp.json()
 
-const fetchTranscript = async () => {
-    try {
-        const response = await axios.post('http://127.0.0.1:5000/transcribe_audio');
-        emit('transcriptReady', response.data.transcript);
-    } catch (error) {
-        console.error('获取转录结果失败:', error);
+            message.success('转录完成', 1)
+            isRecording.value = false
+            emit('update:transcript', data.text || '')
+        }
+    } catch (err) {
+        console.error(err)
+        message.error(err.message)
+    } finally {
+        loading.value = false
     }
-};
+}
 </script>
+
+<style scoped>
+.transcribe-button {
+    max-width: 200px;
+    margin-right: 8px;
+    text-align: center;
+}
+
+.mt-2 {
+    margin-top: 16px;
+}
+</style>

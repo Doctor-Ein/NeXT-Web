@@ -25,10 +25,11 @@
         <div class="InputContainer">
             <!-- 用户输入区域 -->
             <a-textarea class="Unique_Input" v-model:value="user_input" placeholder="在此输入内容..." :rows="10"
-                :auto-size="false" @keydown.enter.exact.prevent="handleSubmit" />
+                :auto-size="false" />
+            <!-- @keydown.enter="handleSubmit" 这里直接给删掉了哈哈哈 -->
             <!-- 操作按钮区域 -->
             <div class="ActionButtons">
-                <AudioInputButton />
+                <AudioInputButton @update:transcript="handle_transcript" />
                 <!-- 上传按钮 -->
                 <a-upload v-model:file-list="fileList" :before-upload="beforeUpload" :multiple="true"
                     :show-upload-list="false" @change="handleUploadChange" :custom-request="dummyRequest"
@@ -59,8 +60,9 @@ const emit = defineEmits(['callParent']);
 const user_input = ref('');
 const isSubmitting = ref(false);
 const fileList = ref([]);
-const isRAGEnabled = ref(true); //TODO: 这里先默认开启叭，累了
+const isRAGEnabled = ref(false); //TODO: 这里先默认开启叭，累了
 
+const handle_transcript = (transcript) => { user_input.value += transcript }
 
 const dummyRequest = ({ onSuccess }) => {
     // 立即标记上传成功，不执行任何操作
@@ -70,7 +72,7 @@ const dummyRequest = ({ onSuccess }) => {
 };
 
 const Switch_RAG = async () => {
-    // isRAGEnabled.value = !isRAGEnabled.value;
+    isRAGEnabled.value = !isRAGEnabled.value;
 
     // try {
     //     const response = await fetch('http://127.0.0.1:5000/api/rag-toggle', {
@@ -231,7 +233,7 @@ const handleSubmit = async () => {
 .RAG-Function {
     position: absolute;
     left: 8px;
-    bottom: 12px;
+    bottom: 0px;
     z-index: 1;
 
     width: 60px;
@@ -307,12 +309,13 @@ const handleSubmit = async () => {
 
 .ActionButtons {
     position: absolute;
-    bottom: 12px;
-    right: 16px;
+    bottom: 6px;
+    right: 8px;
 
     display: flex;
     flex-direction: row;
     justify-content: flex-end;
+    align-items: flex-end;
 }
 
 .UploadButton {
@@ -368,8 +371,10 @@ const handleSubmit = async () => {
 .Unique_Input {
     width: 100%;
     height: 100%;
-    border: 2px solid #bfbfbf;
-    border-radius: 30px;
+    border: 4px solid #bfbfbf;
+    border-radius: 20px;
+
+    font-size: 16px;
     resize: none;
     /* 禁止缩放 */
     padding: 16px;

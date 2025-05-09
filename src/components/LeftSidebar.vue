@@ -24,6 +24,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { defineEmits } from 'vue';
+import model_settings from './model_settings.vue';
 
 const chatList = ref([]);
 const currentChatId = ref(null);
@@ -48,11 +49,6 @@ const addNewChat = async () => {
     console.log('Debug', currentChatId)
     if (!chatList.value || !Array.isArray(chatList.value)) {
         console.warn('chatList 未初始化');
-        return;
-    }
-
-    if (chatList.value.length > 0 && chatList.value[0].title === '新对话') {
-        selectChat(chatList.value[0].id);
         return;
     }
 

@@ -9,31 +9,39 @@
         <div v-if="panelVisible" ref="panelRef" class="settings-panel">
             <h2 style="font-family: 'MapleMono'; font-size: 18px;">配置项区域</h2>
             <hr />
+            <p class="pe">model_id</p>
+            <a-input v-model="model_id" placeholder="claude-3-5-sonnet" />
+
             <p class="pe">temperature</p>
             <a-input-number v-model:value="temperature" :min="0" :max="1" />
+
             <p class="pe">top_k</p>
             <a-input-number v-model:value="top_k" :min="50" :max="500" />
+
             <p class="pe">top_p</p>
             <a-input-number v-model:value="top_p" :min="0.5" :max="1.0" />
+
             <p class="pe">max_tokens</p>
             <a-input-number v-model:value="max_tokens" :min="32" :max="2048" />
+
             <hr />
             <p class="pe">prompt</p>
-            <a-textarea v-model:value="prompt"
-                placeholder="Here, personalize the personality and background of your assistant" :rows="4" />
+            <a-textarea v-model:value="prompt" :rows="4" style="resize: none;" />
         </div>
     </div>
 </template>
 
 <script setup>
+import { message } from 'ant-design-vue';
 import { ref, watch, onMounted, onBeforeUnmount } from 'vue';
 
 // 定义响应式变量
-const temperature = ref(0.3);
+const temperature = ref(0.5);
 const top_k = ref(250);
 const top_p = ref(0.9);
-const max_tokens = ref(512);
-const prompt = ref('');
+const max_tokens = ref(1024);
+const prompt = ref('回答均输出markdown格式的文本。对于数学公式，行内使用$...$；独立公式使用$$...$$，并且在其前需要主动换行');
+const model_id = ref('claude-3-5-sonnet')
 
 // 控制面板显示的变量
 const panelVisible = ref(false);
@@ -95,6 +103,7 @@ watch(panelVisible, async (visible) => {
 
             const result = await response.json();
             console.log('设置已成功发送到后端:', result);
+            message.success(`设置已成功发送到后端`, 1);
         } catch (error) {
             console.error('发送设置到后端时出错:', error);
         }

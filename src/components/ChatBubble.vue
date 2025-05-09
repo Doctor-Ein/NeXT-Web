@@ -5,6 +5,9 @@
             <div class="chat-bubble" v-html="renderedContent"></div>
         </div>
         <div class="button-group">
+            <a-button class="sound-button" @click="handleSound">
+                <SoundOutlined />
+            </a-button>
             <a-button class="copy-button" @click="handleCopy">
                 <CopyOutlined />
             </a-button>
@@ -19,10 +22,12 @@
 import { computed, defineProps, defineEmits } from 'vue';
 import MarkdownIt from 'markdown-it';
 import markdownItKatex from 'markdown-it-katex';
+import hljs from 'highlight.js'; // 引入highlight.js核心库
+import 'highlight.js/styles/github.css'; // 选择代码高亮样式
 
 import userAvatar from '@/assets/images/furina.jpeg';
 import aiAvatar from '@/assets/images/ein.jpeg';
-import { CopyOutlined, RedoOutlined } from '@ant-design/icons-vue';
+import { CopyOutlined, RedoOutlined, SoundOutlined } from '@ant-design/icons-vue';
 import { message } from 'ant-design-vue';
 
 const props = defineProps({
@@ -38,9 +43,20 @@ const md = new MarkdownIt().use(markdownItKatex, {
     // 禁用错误抛出（避免渲染失败阻塞流程）
     throwOnError: false,
     // 允许信任输入（防止字符转义）
-    trust: true
-});
+    trust: true,
+    highlight: (str, lang) => {
+        // 生成带语言标识的代码块
+        const language = hljs.getLanguage(lang) ? lang : 'plaintext';
+        const codeId = `code-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
+        return `<pre class="code-block-wrapper"><div class="code-header">
+                    <span>${language}</span>
+                    <button class="copy-btn" data-code-id="${codeId}">复制</button>
+                </div>
+                <code id="${codeId}" class="hljs language-${language}">${hljs.highlight(str, { language }).value
+            }</code></pre>`;
+    }
+});
 const renderedContent = computed(() => {
     const raw = md.render(props.content);
 
@@ -70,6 +86,41 @@ const renderedContent = computed(() => {
     return tempDiv.innerHTML;
 });
 
+let isSounding = false;
+async function handleSound() {
+    isSounding = !isSounding
+    if (isSounding) { // 这里是第一次点击时，是启动播放
+        console.log('DEBUG: 启动音频中……')
+        const payload = { 'content': props.content }
+        console.log(`DEBUG:${props.content}`)
+        try {
+            const response = await fetch('http://127.0.0.1:5000/api/read', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            message.success('朗读启动', 1)
+        } catch (error) {
+            message.error('朗读时出现未知错误')
+            console.error('朗读时错误:', error);
+            return;
+        }
+    }
+    else {
+        try {
+            console.log('DEBUG: 中止音频流……')
+            const response = await fetch('http://127.0.0.1:5000/api/read')
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            message.success('成功中止朗读', 1)
+        } catch (error) {
+            message.error('朗读时出现未知错误')
+            console.error('朗读时错误:', error);
+            return;
+        }
+    }
+
+}
 // 复制文本到剪贴板
 async function handleCopy() {
     const text = props.content;
@@ -84,7 +135,6 @@ async function handleCopy() {
         fallbackCopy(text);
     }
 }
-
 // 回退方案：使用 textarea + execCommand
 function fallbackCopy(text) {
     const textarea = document.createElement('textarea');
@@ -105,14 +155,55 @@ function fallbackCopy(text) {
 // 重置逻辑
 function handleReset() {
     if (props.role === 'user') {
+        console.log('[Debug] user reset')
         emit('reset-user');
     } else {
+        console.log('[DEBUG] ai reset')
         emit('reset-ai');
     }
 }
 </script>
 
 <style scoped>
+/* 代码块样式 */
+.code-block-wrapper {
+    position: relative;
+    margin: 1em 0;
+    border-radius: 8px;
+    background: #f6f8fa;
+    overflow: hidden;
+}
+
+.code-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: #e1e4e8;
+    font-size: 0.9em;
+}
+
+.copy-btn {
+    background: none;
+    border: 1px solid #0366d6;
+    color: #0366d6;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.copy-btn:hover {
+    background: #0366d6;
+    color: white;
+}
+
+/* 保持原有样式 */
+.chat-bubble>>>.hljs {
+    padding: 1em !important;
+    background: transparent !important;
+}
+
 .content-row {
     display: inline-flex;
     /* 使容器根据内容宽度自适应 */
@@ -140,7 +231,7 @@ function handleReset() {
 }
 
 .chat-bubble p {
-    margin: 0px;
+    margin-bottom: 0px;
     /* 去除段落默认外边距 */
     padding: 0px;
     /* 去除段落默认内边距 */
@@ -207,6 +298,7 @@ function handleReset() {
     margin-right: 48px;
 }
 
+.sound-button,
 .copy-button,
 .reset-button {
     width: 20px;
