@@ -40,7 +40,7 @@ const temperature = ref(0.5);
 const top_k = ref(250);
 const top_p = ref(0.9);
 const max_tokens = ref(1024);
-const prompt = ref('回答均输出markdown格式的文本。对于数学公式，行内使用$...$；独立公式使用$$...$$，并且在其前需要主动换行');
+const prompt = ref("回答均输出markdown格式的文本。对于数学公式，行内使用$...$；独立公式使用$$...$$，并且在其前需要主动换行。RAG模式下，参考资料以json字符串格式给出，注意辨别无关主题，通过元数据给出正确的来源引用");
 const model_id = ref('claude-3-5-sonnet')
 
 // 控制面板显示的变量

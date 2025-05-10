@@ -24,8 +24,8 @@
 
         <div class="InputContainer">
             <!-- 用户输入区域 -->
-            <a-textarea class="Unique_Input" v-model:value="user_input" placeholder="在此输入内容..." :rows="10"
-                :auto-size="false" />
+            <a-textarea ref="chatInput" class="Unique_Input" v-model:value="user_input" placeholder="在此输入内容..."
+                :rows="10" :auto-size="false" @keydown="handleKeyDown" />
             <!-- @keydown.enter="handleSubmit" 这里直接给删掉了哈哈哈 -->
             <!-- 操作按钮区域 -->
             <div class="ActionButtons">
@@ -48,10 +48,9 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
 import { FileAddTwoTone, DeleteOutlined } from '@ant-design/icons-vue';
 import { message } from 'ant-design-vue';
-import { defineEmits } from 'vue';
+import { defineEmits, ref, onMounted, watch, nextTick } from 'vue';
 import AudioInputButton from './AudioInputButton.vue';
 
 // 定义向父组件触发事件
@@ -62,7 +61,119 @@ const isSubmitting = ref(false);
 const fileList = ref([]);
 const isRAGEnabled = ref(false); //TODO: 这里先默认开启叭，累了
 
+// 响应式状态管理
+const chatInput = ref(null);
+const dialogues = ref([]);
+const dialogue_list = ref([])
+
+// 新增响应式状态
+const isAutoCompleteActive = ref(false)
+
+// 辅助函数：获取最长公共前缀
+const getLongestCommonPrefix = (strs) => {
+    if (strs.length === 0) return ''
+    let prefix = strs[0]
+    for (let i = 1; i < strs.length; i++) {
+        while (strs[i].indexOf(prefix) !== 0) {
+            prefix = prefix.substring(0, prefix.length - 1)
+            if (prefix === '') return ''
+        }
+    }
+    return prefix
+}
+
+// 键盘事件处理
+const handleKeyDown = (e) => {
+    if (e.key === 'Tab' && isAutoCompleteActive.value) {
+        e.preventDefault()
+        const input = user_input.value
+        const searchTerm = input.slice(1)
+
+        // 过滤匹配的对话标题
+        const matches = dialogues.value.filter(title =>
+            title.toLowerCase().startsWith(searchTerm.toLowerCase())
+        )
+
+        if (matches.length > 0) {
+            // 获取最长公共前缀
+            const commonPrefix = getLongestCommonPrefix(matches)
+
+            // 构造新输入内容
+            const newValue = `@${commonPrefix} `
+            user_input.value = newValue
+
+            // 移动光标到末尾
+            nextTick(() => {
+                const textarea = chatInput.value?.resizableTextArea?.textArea
+                if (textarea) {
+                    textarea.selectionStart = newValue.length
+                    textarea.selectionEnd = newValue.length
+                }
+            })
+        }
+    }
+}
+
+// 监听输入内容变化
+watch(user_input, (newVal) => {
+    // 通过正则判断是否以@开头且不包含空格
+    isAutoCompleteActive.value = /^@[^\s]*$/.test(newVal)
+})
+
+onMounted(async () => {
+    try {
+        const res = await fetch('http://127.0.0.1:5000/api/dialogue_list');
+        if (!res.ok) throw new Error(res.statusText);
+
+        dialogue_list.value = await res.json();
+        // 正确的方式提取 title 数组
+        dialogues.value = dialogue_list.value.map(item => item.title);
+
+        console.log('加载的对话标题:', dialogues.value); // 调试用
+    } catch (e) {
+        console.error('加载历史对话失败', e);
+        dialogues.value = []; // 确保初始化为空数组
+    }
+});
+
+// 新增检测函数
+const detectAutoCompleteReference = () => {
+    const input = user_input.value
+
+    // 使用正则匹配格式：@开头 + 非空内容 + 空格或结尾
+    const referenceRegex = /^@(\S+)(?=\s|$)/
+    const match = input.match(referenceRegex)
+
+    if (match) {
+        const matchedTitle = match[1]
+        // 在dialogues中精确匹配标题（区分大小写）
+        return dialogues.value.find(title => title === matchedTitle) || ''
+    }
+    return ''
+}
+
+
 const handle_transcript = (transcript) => { user_input.value += transcript }
+
+const Switch_RAG = async () => {
+    isRAGEnabled.value = !isRAGEnabled.value;
+    try {
+        const payload = { 'rag_enabled': isRAGEnabled.value }
+        const response = await fetch('http://127.0.0.1:5000/api/rag_toggle', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+        });
+        if (!response.ok) throw new Error('状态切换失败');
+        message.success(isRAGEnabled.value ? 'RAG 模式已开启' : 'RAG 模式已关闭');
+    } catch (error) {
+        message.error('RAG 状态切换失败');
+        // 回滚状态
+        isRAGEnabled.value = !isRAGEnabled.value;
+    }
+};
 
 const dummyRequest = ({ onSuccess }) => {
     // 立即标记上传成功，不执行任何操作
@@ -70,29 +181,6 @@ const dummyRequest = ({ onSuccess }) => {
         onSuccess && onSuccess();
     }, 0);
 };
-
-const Switch_RAG = async () => {
-    isRAGEnabled.value = !isRAGEnabled.value;
-
-    // try {
-    //     const response = await fetch('http://127.0.0.1:5000/api/rag-toggle', {
-    //         method: 'POST',
-    //         headers: {
-    //             'Content-Type': 'application/json',
-    //         },
-    //         body: JSON.stringify({ rag_enabled: isRAGEnabled.value }),
-    //     });
-
-    //     if (!response.ok) throw new Error('状态切换失败');
-
-    //     message.success(isRAGEnabled.value ? 'RAG 模式已开启' : 'RAG 模式已关闭');
-    // } catch (error) {
-    //     message.error('RAG 状态切换失败');
-    //     // 回滚状态
-    //     isRAGEnabled.value = !isRAGEnabled.value;
-    // }
-};
-
 
 // 虽然常用的一个检查文件的钩子函数但还是只用来处理后缀名hhh
 const beforeUpload = (file) => {
@@ -172,23 +260,43 @@ const readFileAsBase64 = (file) => {
     });
 };
 
+const findIdByTitle = (targetTitle, data) => {
+    // 安全校验
+    if (!Array.isArray(data)) return null;
+
+    // 精确匹配版本（区分大小写）
+    const item = data.find(({ title }) => title === targetTitle);
+
+    // 不区分大小写版本（如需使用请取消注释）
+    // const item = data.find(({ title }) => 
+    //   title.toLowerCase() === targetTitle?.toLowerCase()
+    // );
+
+    return item ? item.id : null;
+};
+
 // 提交处理
 const handleSubmit = async () => {
     if (isSubmitting.value) return;
     isSubmitting.value = true;
-
     try {
         if (!user_input.value && fileList.value.length === 0) {
             message.warning('请输入内容或上传文件');
             return;
         }
 
+
+        const title = detectAutoCompleteReference()
+        console.log('DEBUGGGGG:', title, 'dialogue_list', dialogue_list.value)
+        const reference_id = findIdByTitle(title, dialogue_list.value)
+        console.log('DEBUGGGGG:', reference_id)
+
         let images = []
         if (fileList.value.length != 0) {
             console.log('Debug:FileList is not empty.')
             images = await getFileListJsonWithContent()
         }
-        const payload = { 'text': user_input.value, 'images': images }
+        const payload = { 'text': user_input.value, 'images': images, 'reference_id': reference_id }
         emit('callParent', payload);
         message.success('提交成功');
         user_input.value = '';
