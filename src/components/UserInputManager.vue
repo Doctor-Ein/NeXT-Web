@@ -189,7 +189,7 @@ const handleSubmit = async () => {
             images = await getFileListJsonWithContent()
         }
         const payload = { 'text': user_input.value, 'images': images }
-
+        emit('callParent', payload);
         message.success('提交成功');
         user_input.value = '';
         fileList.value = [];
@@ -207,7 +207,7 @@ const handleSubmit = async () => {
         }
         const result = await response.json()
         // 触发父组件函数调用，并传递 payload
-        emit('callParent', payload);
+        emit('callParent');
         console.log('Invoke_Model:', result.res)
     } catch (error) {
         console.error('提交失败：', error);

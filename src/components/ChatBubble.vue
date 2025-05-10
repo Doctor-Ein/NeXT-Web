@@ -34,28 +34,30 @@ const props = defineProps({
     role: { type: String, required: true, validator: v => ['user', 'ai'].includes(v) },
     content: { type: String, required: true }
 });
+
 const emit = defineEmits(['reset-user', 'reset-ai']);
 
 const avatarUrl = computed(() => (props.role === 'user' ? userAvatar : aiAvatar));
-const md = new MarkdownIt().use(markdownItKatex, {
+const md = new MarkdownIt({
+    linkify: true,
+    typographer: true,
+    highlight: function (str, lang) {
+        if (lang && hljs.getLanguage(lang)) {
+            try {
+                return `<pre class="hljs"><code>${hljs.highlight(str, { language: lang, ignoreIllegals: true }).value
+                    }</code></pre>`;
+            } catch (__) { return }
+        }
+
+        return `<pre class="hljs"><code>${md.utils.escapeHtml(str)}</code></pre>`;
+    }
+}).use(markdownItKatex, {
     // 核心配置：仅生成 MathML
     output: 'mathml',
     // 禁用错误抛出（避免渲染失败阻塞流程）
     throwOnError: false,
     // 允许信任输入（防止字符转义）
     trust: true,
-    highlight: (str, lang) => {
-        // 生成带语言标识的代码块
-        const language = hljs.getLanguage(lang) ? lang : 'plaintext';
-        const codeId = `code-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-
-        return `<pre class="code-block-wrapper"><div class="code-header">
-                    <span>${language}</span>
-                    <button class="copy-btn" data-code-id="${codeId}">复制</button>
-                </div>
-                <code id="${codeId}" class="hljs language-${language}">${hljs.highlight(str, { language }).value
-            }</code></pre>`;
-    }
 });
 const renderedContent = computed(() => {
     const raw = md.render(props.content);
