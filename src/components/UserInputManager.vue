@@ -25,7 +25,7 @@
         <div class="InputContainer">
             <!-- 用户输入区域 -->
             <a-textarea ref="chatInput" class="Unique_Input" v-model:value="user_input" placeholder="在此输入内容..."
-                :rows="10" :auto-size="false" @keydown="handleKeyDown" />
+                :rows="10" :auto-size="false" @keydown="handleKeyDown" @paste="handlePaste" />
             <!-- @keydown.enter="handleSubmit" 这里直接给删掉了哈哈哈 -->
             <!-- 操作按钮区域 -->
             <div class="ActionButtons">
@@ -68,6 +68,39 @@ const dialogue_list = ref([])
 
 // 新增响应式状态
 const isAutoCompleteActive = ref(false)
+
+// 粘贴事件处理 —— 只取最新一项，箭头函数自动绑定外层 this
+const handlePaste = (event) => {
+    const items = event.clipboardData?.items;
+    if (!items || items.length === 0) return;
+
+    // 取最后一条
+    const item = items[items.length - 1];
+    if (!item.type.startsWith('image/')) return;
+
+    const file = item.getAsFile();
+    if (!file) return;
+
+    // 校验后缀名
+    const extMatch = file.name.match(/\.(jpe?g|png)$/i);
+    if (!extMatch) return;
+
+    uploadImage(file);
+};
+
+// 上传图片 —— 同样用箭头函数
+const uploadImage = (file) => {
+    const uid = Date.now().toString();
+    const newFile = {
+        uid,
+        name: file.name,
+        status: 'uploading',
+        originFileObj: file,
+    };
+
+    fileList.value = [...fileList.value, newFile];
+};
+
 
 // 辅助函数：获取最长公共前缀
 const getLongestCommonPrefix = (strs) => {
