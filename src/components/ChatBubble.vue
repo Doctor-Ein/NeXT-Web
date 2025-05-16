@@ -20,11 +20,6 @@
 
 <script setup>
 import { computed, defineProps, defineEmits } from 'vue';
-import MarkdownIt from 'markdown-it';
-import markdownItKatex from 'markdown-it-katex';
-import hljs from 'highlight.js'; // 引入highlight.js核心库
-import 'highlight.js/styles/github.css'; // 选择代码高亮样式
-
 import userAvatar from '@/assets/images/furina.jpeg';
 import aiAvatar from '@/assets/images/ein.jpeg';
 import { CopyOutlined, RedoOutlined, SoundOutlined } from '@ant-design/icons-vue';
@@ -38,55 +33,34 @@ const props = defineProps({
 const emit = defineEmits(['reset-user', 'reset-ai']);
 
 const avatarUrl = computed(() => (props.role === 'user' ? userAvatar : aiAvatar));
-const md = new MarkdownIt({
-    linkify: true,
-    typographer: true,
-    highlight: function (str, lang) {
-        if (lang && hljs.getLanguage(lang)) {
-            try {
-                return `<pre class="hljs"><code>${hljs.highlight(str, { language: lang, ignoreIllegals: true }).value
-                    }</code></pre>`;
-            } catch (__) { return }
-        }
-
-        return `<pre class="hljs"><code>${md.utils.escapeHtml(str)}</code></pre>`;
-    }
-}).use(markdownItKatex, {
-    // 核心配置：仅生成 MathML
-    output: 'mathml',
-    // 禁用错误抛出（避免渲染失败阻塞流程）
-    throwOnError: false,
-    // 允许信任输入（防止字符转义）
-    trust: true,
-});
 const renderedContent = computed(() => {
-    const raw = md.render(props.content);
+    // 直接将 props.content 视为 HTML，不经过 Markdown 渲染
+    const raw = props.content;
 
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = raw;
+    // const tempDiv = document.createElement('div');
+    return raw;
+    // tempDiv.innerHTML = raw;
 
-    // 更彻底的递归删除函数
-    function removeKatexElements(node) {
-        // 检查当前节点是否是我们要删除的 span
-        if (node.nodeType === Node.ELEMENT_NODE &&
-            node.tagName.toLowerCase() === 'span' &&
-            node.classList.contains('katex-html')) {
-            node.parentNode.removeChild(node);
-            return; // 已经删除，不需要继续处理
-        }
+    // // // 删除所有 .katex-html span
+    // // function removeKatexElements(node) {
+    // //     if (node.nodeType === Node.ELEMENT_NODE &&
+    // //         node.tagName.toLowerCase() === 'span' &&
+    // //         node.classList.contains('katex-html')) {
+    // //         node.parentNode.removeChild(node);
+    // //         return;
+    // //     }
 
-        // 递归处理子节点
-        if (node.childNodes) {
-            // 使用 Array.from 创建静态副本，因为 childNodes 是动态的
-            Array.from(node.childNodes).forEach(child => {
-                removeKatexElements(child);
-            });
-        }
-    }
+    // //     if (node.childNodes) {
+    // //         Array.from(node.childNodes).forEach(child => {
+    // //             removeKatexElements(child);
+    // //         });
+    // //     }
+    // // }
 
-    removeKatexElements(tempDiv);
-    return tempDiv.innerHTML;
+    // // removeKatexElements(tempDiv);
+    // return tempDiv.innerHTML;
 });
+
 
 let isSounding = false;
 async function handleSound() {
@@ -167,24 +141,6 @@ function handleReset() {
 </script>
 
 <style scoped>
-/* 代码块样式 */
-.code-block-wrapper {
-    position: relative;
-    margin: 1em 0;
-    border-radius: 8px;
-    background: #f6f8fa;
-    overflow: hidden;
-}
-
-.code-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 8px 12px;
-    background: #e1e4e8;
-    font-size: 0.9em;
-}
-
 .copy-btn {
     background: none;
     border: 1px solid #0366d6;
@@ -215,7 +171,7 @@ function handleReset() {
 
 /*这里还是没有优化成功（哭）*/
 .chat-bubble {
-    max-width: 70%;
+    max-width: 90%;
     display: inline-block;
     /* 使气泡根据内容高度自适应 */
     padding: 8px 8px 0px 8px;
@@ -237,25 +193,6 @@ function handleReset() {
     /* 去除段落默认外边距 */
     padding: 0px;
     /* 去除段落默认内边距 */
-}
-
-/* 公式容器基础样式 */
-.katex {
-    font: normal 1em KaTeX_Main, Times New Roman, serif;
-    line-height: 1.2;
-    white-space: nowrap;
-}
-
-/* 块级公式对齐 */
-.katex-display {
-    display: flex;
-    justify-content: center;
-    margin: 1em 0;
-}
-
-/* 符号间距修正 */
-.katex .mspace {
-    display: inline-block;
 }
 
 .chat-item {
@@ -303,8 +240,8 @@ function handleReset() {
 .sound-button,
 .copy-button,
 .reset-button {
-    width: 20px;
-    height: 20px;
+    width: 25px;
+    height: 25px;
     padding: 0;
     display: flex;
     align-items: center;

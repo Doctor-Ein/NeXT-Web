@@ -67,17 +67,15 @@ watch(currentChatID, (newID) => {
   updateMessages(newID);
 });
 
-const handleChildSubmit = (payload = null) => {
-  if (payload) {
-    console.log('子组件提交的内容:', payload);
-    mes.value.push({ 'speaker': 'user', 'content': payload['text'] })
-  }
-  else {
-    updateMessages(currentChatID.value)
-  }
-  // mes.value.push({ 'role': 'user', 'content': payload['text'] })
-  // 这里可以执行任意逻辑，比如更新状态、调用接口、路由跳转等
-};
+// const handleChildSubmit = (payload = null) => {
+//   if (payload) {
+//     console.log('子组件提交的内容:', payload);
+//     mes.value.push({ 'speaker': 'user', 'content': payload['text'] })
+//   }
+//   else {
+//     updateMessages(currentChatID.value)
+//   }
+// };
 </script>
 
 <style scoped>
