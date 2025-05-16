@@ -6,19 +6,21 @@
 
 
     <!-- 主内容区域 -->
-    <a-layout-content class="Right-Layout" style="position: relative;padding-left: 15%;padding-right: 15%;">
+    <a-layout-content class="Right-Layout">
       <MainChat :messages="mes" />
       <UserInputManager @callParent="handleChildSubmit" />
+      <Live2DCanvas />
     </a-layout-content>
   </a-layout>
 </template>
 
 <script setup>
 import { ref, watch } from 'vue';
+import { message } from 'ant-design-vue';
 import LeftSidebar from './components/LeftSidebar.vue';
 import UserInputManager from './components/UserInputManager.vue';
 import MainChat from './components/MainChat.vue';
-import { message } from 'ant-design-vue';
+import Live2DCanvas from './components/Live2D_Canvas.vue'
 
 // Reactive state variables
 const currentChatID = ref(null);
@@ -77,3 +79,9 @@ const handleChildSubmit = (payload = null) => {
   // 这里可以执行任意逻辑，比如更新状态、调用接口、路由跳转等
 };
 </script>
+
+<style scoped>
+.Right-Layout {
+  position: relative;
+}
+</style>

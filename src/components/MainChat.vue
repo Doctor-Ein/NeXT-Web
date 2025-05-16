@@ -25,6 +25,8 @@ defineProps({
 .chat-dialog {
     position: absolute;
     top: 5%;
+    left: 50%;
+    transform: translateX(-50%);
 
     width: 60%;
     height: 75%;
